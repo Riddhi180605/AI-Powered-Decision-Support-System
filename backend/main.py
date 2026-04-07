@@ -2015,11 +2015,21 @@ async def answer_question(request: Dict[str, Any]) -> Dict[str, Any]:
         fallback_to_rag = False
         helper_message = None
         if answer_text == "Not enough data available" and stage != "ai_insights_generated":
-            fallback_to_rag = False
+            fallback_to_rag = True
             helper_message = (
                 "I need more project context to answer this precisely. "
-                "Complete ML training and generate AI insights, then ask again."
+                "I can fall back to the RAG chatbot if the index is available."
             )
+
+        if fallback_to_rag:
+            return {
+                "success": False,
+                "answer": answer_text,
+                "stage": stage,
+                "fallback_to_rag": True,
+                "message": helper_message,
+                "response_mode": "context_aware",
+            }
 
         return {
             "success": True,

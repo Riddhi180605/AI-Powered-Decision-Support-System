@@ -330,27 +330,23 @@
 
                 const answerData = await answerResponse.json();
 
-                if (answerData.success && answerData.answer) {
+                if (answerData.success && answerData.answer && !answerData.fallback_to_rag) {
                     // Direct answer from question handler
                     completeTyping(answerData.answer);
                 } else if (answerData.fallback_to_rag) {
                     // Should fall back to RAG
-                    const state = await getProjectState();
-                    if (state.chatbot_ready) {
-                        // Build index if needed
-                        if (!indexReady) {
-                            typingMessage.textContent = 'Preparing knowledge base...';
-                            indexReady = await ensureIndex(messages);
-                        }
+                    if (!indexReady) {
+                        typingMessage.textContent = 'Preparing knowledge base...';
+                        indexReady = await ensureIndex(messages);
+                    }
 
-                        if (indexReady) {
-                            // Use RAG chatbot
-                            try {
-                                const ragAnswer = await askQuestion(query, messages);
-                                completeTyping(ragAnswer);
-                            } catch (ragError) {
-                                completeTyping(`I couldn't find an answer: ${ragError.message || 'Unknown error'}`);
-                            }
+                    if (indexReady) {
+                        // Use RAG chatbot
+                        try {
+                            const ragAnswer = await askQuestion(query, messages);
+                            completeTyping(ragAnswer);
+                        } catch (ragError) {
+                            completeTyping(`I couldn't find an answer: ${ragError.message || 'Unknown error'}`);
                         }
                     } else {
                         completeTyping(answerData.message || "I need more context. Try asking about your dataset, cleaning, or model training.");
