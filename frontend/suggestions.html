@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Suggestions - Data Analysis Tool</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .suggestions-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .suggestion-card {
+            border-left: 3px solid rgba(10, 132, 255, 0.55);
+            margin: 20px 0;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .suggestion-card.info {
+            border-left-color: rgba(10, 132, 255, 0.75);
+        }
+
+        .suggestion-card.success {
+            border-left-color: rgba(48, 209, 88, 0.7);
+        }
+
+        .suggestion-card.warning {
+            border-left-color: rgba(255, 214, 10, 0.65);
+        }
+
+        .suggestion-card.danger {
+            border-left-color: rgba(255, 69, 58, 0.75);
+        }
+
+        #aiInsightsContent p,
+        #aiInsightsContent li,
+        #aiInsightsContent strong {
+            color: #B0B3B8;
+        }
+
+        #aiInsightsContent .impact-badge {
+            color: #04120a;
+            font-weight: 700;
+        }
+
+        #aiInsightsContent .impact-badge.impact-low {
+            background: rgba(48, 209, 88, 0.28);
+            color: #B9FFCD;
+            border: 1px solid rgba(48, 209, 88, 0.45);
+        }
+
+        #aiInsightsContent ul,
+        #aiInsightsContent ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .score-explanation-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .score-explanation-list li {
+            padding: 10px 0 10px 28px;
+            position: relative;
+        }
+
+        .score-explanation-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #30D158;
+            font-weight: 700;
+        }
+
+        .home-icon-btn {
+            text-decoration: none;
+        }
+
+        .model-status-cell {
+            text-align: center;
+        }
+
+        .model-error-cell {
+            text-align: center;
+            color: #FFB1AB !important;
+            font-weight: 600;
+        }
+
+        .rag-status,
+        #whatIfRowHelp,
+        #whatIfModeHelp {
+            color: #B0B3B8 !important;
+        }
+
+        .chat-log {
+            max-height: 420px;
+            padding: 16px;
+        }
+
+        .chat-message {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .chat-message.user {
+            background: rgba(10, 132, 255, 0.18);
+            border-left: 3px solid #0A84FF;
+        }
+
+        .chat-message.assistant {
+            background: rgba(48, 209, 88, 0.1);
+            border-left: 3px solid #30D158;
+        }
+
+        .chat-message.system {
+            background: rgba(255, 214, 10, 0.12);
+            border-left: 3px solid #FFD60A;
+        }
+
+        .retrieved-context {
+            margin-top: 16px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.2);
+            padding-top: 12px;
+        }
+
+        .retrieved-context details {
+            margin-bottom: 10px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .retrieved-context summary {
+            cursor: pointer;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        .change-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 11px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .change-item button {
+            background: #FF453A;
+            border-color: transparent;
+            color: #FFFFFF;
+        }
+
+        .whatif-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        body.whatif-focus::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 900;
+        }
+
+        body.whatif-focus .header,
+        body.whatif-focus .nav-buttons {
+            filter: blur(3px);
+            opacity: 0.4;
+        }
+
+        body.whatif-focus #contentContainer>*:not(#what-if) {
+            filter: blur(4px);
+            opacity: 0.26;
+        }
+
+        body.whatif-focus #what-if.active {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(1050px, 92vw);
+            max-height: 86vh;
+            overflow-y: auto;
+            z-index: 1001;
+            margin: 0;
+            padding: 2px;
+        }
+
+        body.whatif-focus #what-if .suggestion-card {
+            margin: 0;
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            body.whatif-focus #what-if.active {
+                width: 96vw;
+                max-height: 88vh;
+            }
+        }
+
+        body.suggestions-page::before,
+        body.suggestions-page::after {
+            display: none;
+        }
+
+        body.suggestions-page {
+            background:
+                radial-gradient(circle at 20% 0%, rgba(193, 160, 103, 0.14), transparent 48%),
+                radial-gradient(circle at 85% 12%, rgba(160, 133, 92, 0.09), transparent 38%),
+                linear-gradient(180deg, #fffdf8, #f4ebdc);
+        }
+    </style>
+</head>
+
+<body class="suggestions-page">
+    <div class="container">
+        <div class="header">
+            <h1>💡 AI Suggestions & Insights</h1>
+            <p>Get actionable insights and recommendations to improve your model and data</p>
+        </div>
+
+        <div class="main-content suggestions-container">
+            <!-- Navigation -->
+            <div class="nav-buttons">
+                <a class="btn btn-secondary home-icon-btn" href="index.html" title="Go to Home"
+                    aria-label="Go to Home">🏠 Home</a>
+                <button class="btn btn-secondary" id="backBtn">← Back to Model Training</button>
+                <button class="btn btn-primary" id="whatIfNavBtn" onclick="switchTab('what-if')">🧪 What-If
+                    Simulation</button>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating AI Suggestions...</p>
+                <p class="loading-text">Analyzing your model and data...</p>
+            </div>
+
+            <!-- Error State -->
+            <div class="error-section" id="errorMessage" style="display: none;"></div>
+
+            <!-- Content Container -->
+            <div id="contentContainer" style="display: none;">
+                <!-- Problem Type Section -->
+                <div class="suggestion-card info">
+                    <h3>📋 Problem Type Analysis</h3>
+                    <div class="recommendation-text" id="problemTypeAnalysis"></div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-button active" onclick="switchTab('features')">🎯 Feature Impact</button>
+                    <button class="tab-button" onclick="switchTab('improvements')">📈 Improvement Tips</button>
+                    <button class="tab-button" onclick="switchTab('model')">🤖 Model Selection</button>
+                    <button class="tab-button" onclick="switchTab('data')">📊 Data Suggestions</button>
+                    <button class="tab-button" onclick="switchTab('ai-insights')">🧠 AI-Powered Insights</button>
+                </div>
+
+                <!-- Tab 1: Feature Impact -->
+                <div id="features" class="tab-content active">
+                    <div class="suggestion-card success">
+                        <h3>⭐ Most Impactful Features</h3>
+                        <div class="dataset-summary">
+                            <div class="summary-box">
+                                <h4>Top Feature</h4>
+                                <div class="summary-value" id="topFeature">-</div>
+                            </div>
+                            <div class="summary-box">
+                                <h4>Impact Score</h4>
+                                <div class="summary-value" id="topFeatureScore">-</div>
+                            </div>
+                        </div>
+                        <div id="featureImportanceList"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Improvement Tips -->
+                <div id="improvements" class="tab-content">
+                    <div class="suggestion-card warning">
+                        <h3>📈 How to Improve Your Target Column</h3>
+                        <p class="suggestion-text">Based on feature correlations with your target column:</p>
+                        <div id="improvementRecommendations"></div>
+                    </div>
+
+                    <div class="suggestion-card info">
+                        <h3>💡 Key Insights</h3>
+                        <div id="keyInsights"></div>
+                    </div>
+                </div>
+
+                <div id="model" class="tab-content">
+                    <div class="suggestion-card success">
+                        <h3>🏆 Why This Model Was Selected</h3>
+                        <div class="model-score" id="modelScore">-</div>
+                        <p class="suggestion-text"><strong>Model Name:</strong> <span id="selectedModel">-</span></p>
+                        <h4>Reasons for Selection:</h4>
+                        <ul class="score-explanation-list" id="modelReasons"></ul>
+                    </div>
+
+                    <div class="suggestion-card info">
+                        <h3>📊 Model Comparison</h3>
+                        <div id="modelComparison"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Data Suggestions -->
+                <div id="data" class="tab-content">
+                    <div class="suggestion-card warning">
+                        <h3>📊 Dataset & Feature Recommendations</h3>
+                        <div id="dataSuggestions"></div>
+                    </div>
+
+                    <div class="suggestion-card info">
+                        <h3>📈 Current Dataset Status</h3>
+                        <div class="dataset-summary" id="datasetStatus"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: AI-Powered Insights -->
+                <div id="ai-insights" class="tab-content">
+                    <div class="suggestion-card success">
+                        <h3>🧠 AI-Powered Business Intelligence</h3>
+                        <p class="suggestion-text">Advanced insights generated using Groq-hosted LLMs and SHAP analysis
+                            for
+                            deeper understanding of your model's predictions.</p>
+                        <button class="btn btn-primary" id="generateAIInsightsBtn">🚀 Generate AI Insights</button>
+                    </div>
+
+                    <!-- AI Insights Content -->
+                    <div id="aiInsightsContent" style="display: none;">
+                        <div class="suggestion-card info">
+                            <h3>💭 Prediction Interpretation</h3>
+                            <div id="predictionInterpretation"></div>
+                        </div>
+
+                        <div class="suggestion-card warning">
+                            <h3>🔍 Feature Analysis</h3>
+                            <div id="featureAnalysis"></div>
+                        </div>
+
+                        <div class="suggestion-card success">
+                            <h3>📈 Trend Comparison</h3>
+                            <div id="trendComparison"></div>
+                        </div>
+
+                        <div class="suggestion-card danger">
+                            <h3>🎯 Actionable Recommendations</h3>
+                            <div id="actionableRecommendations"></div>
+                        </div>
+
+                        <!-- Risk Assessment -->
+                        <div class="suggestion-card warning" id="riskAssessmentSection" style="display: none;">
+                            <h3>⚠️ Risk Assessment</h3>
+                            <div id="riskAssessment"></div>
+                        </div>
+
+                        <!-- Implementation Roadmap -->
+                        <div class="suggestion-card info" id="roadmapSection" style="display: none;">
+                            <h3>🗺️ Implementation Roadmap</h3>
+                            <div id="implementationRoadmap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 7: What-If Simulation -->
+                <div id="what-if" class="tab-content">
+                    <div class="suggestion-card success">
+                        <div class="whatif-header">
+                            <h3>🧪 What-If Scenario Simulation</h3>
+                            <button class="whatif-close-btn" type="button" onclick="closeWhatIfFocus()">✕ Close</button>
+                        </div>
+                        <p class="suggestion-text">Test "what happens if I change this feature?" and instantly compare
+                            old vs new prediction.</p>
+
+                        <div class="howto-box">
+                            <h4>How to use (3 simple steps)</h4>
+                            <ol>
+                                <li>Choose a row index (optional). If empty, default values are used.</li>
+                                <li>Select one or more feature changes, then click <strong>Add Change</strong>.</li>
+                                <li>Click <strong>Run Simulation</strong> to see old prediction, new prediction, and
+                                    plain-language insight.</li>
+                            </ol>
+                        </div>
+
+                        <div class="whatif-grid">
+                            <div>
+                                <label for="whatIfRowIndex">1) Dataset Row Number</label>
+                                <input type="number" id="whatIfRowIndex" min="0" placeholder="Example: 0" />
+                                <p class="suggestion-text" id="whatIfRowHelp" style="margin:6px 0 0; font-size:0.85em;">
+                                    Row index starts at 0. Example: first row = 0, second row = 1.</p>
+                            </div>
+                            <div>
+                                <label for="whatIfFeature">2) Feature</label>
+                                <select id="whatIfFeature"></select>
+                            </div>
+                            <div>
+                                <label for="whatIfMode">3) Change Type</label>
+                                <select id="whatIfMode">
+                                    <option value="set">Set exact value</option>
+                                    <option value="add">Increase/Decrease by amount</option>
+                                    <option value="percent">Increase/Decrease by %</option>
+                                </select>
+                                <p class="suggestion-text" id="whatIfModeHelp"
+                                    style="margin:6px 0 0; font-size:0.85em;"></p>
+                            </div>
+                            <div>
+                                <label for="whatIfValue">4) Value</label>
+                                <input type="text" id="whatIfValue" placeholder="Example: +20 or 50" />
+                                <select id="whatIfCategoryValue" style="display:none;"></select>
+                            </div>
+                        </div>
+
+                        <div class="whatif-result-box" id="whatIfRowPreview" style="display:none;"></div>
+
+                        <div class="quick-presets" id="whatIfQuickPresets">
+                            <button type="button" data-preset="percent:+10">+10%</button>
+                            <button type="button" data-preset="percent:+20">+20%</button>
+                            <button type="button" data-preset="percent:-10">-10%</button>
+                            <button type="button" data-preset="add:+1">+1</button>
+                            <button type="button" data-preset="add:-1">-1</button>
+                        </div>
+
+                        <div class="rag-controls">
+                            <button class="btn btn-secondary" id="addWhatIfChangeBtn">Add Change</button>
+                            <button class="btn btn-secondary" id="clearWhatIfChangesBtn">Clear All</button>
+                            <button class="btn btn-primary" id="runWhatIfBtn">Run Simulation</button>
+                        </div>
+
+                        <div class="change-list" id="whatIfChangeList"></div>
+
+                        <div class="whatif-result-box" id="whatIfResults" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <!-- General Insights -->
+                <div class="suggestion-card info">
+                    <h3>🔍 General Recommendations</h3>
+                    <div id="generalRecommendations"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/suggestions.js"></script>
+    <script src="js/chatbot-widget.js"></script>
+</body>
+
+</html>

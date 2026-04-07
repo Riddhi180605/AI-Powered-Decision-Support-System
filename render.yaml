@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: ai-powered-sdss
+    env: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: AUTO_OPEN_FRONTEND
+        value: "0"
+      - key: ALLOWED_ORIGINS
+        value: https://ai-powered-sdss.onrender.com
+      - key: LLM_PROVIDER
+        value: openai
+      - key: LLM_MODELS
+        value: gpt-4o-mini,gpt-4.1-mini,gpt-3.5-turbo
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false

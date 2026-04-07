@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleaning Results - Data Analysis Tool</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .results-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .results-container .comparison-grid,
+        .results-container .cleaning-summary {
+            align-items: stretch;
+        }
+
+        .results-container .comparison-box,
+        .results-container .summary-card {
+            height: 100%;
+            margin: 0;
+        }
+
+        .results-container .comparison-box h3,
+        .results-container .summary-label {
+            margin: 0;
+        }
+
+        .results-container .summary-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .summary-card {
+            background: linear-gradient(180deg, #1C1C1E, #121212);
+        }
+
+        .cleaning-summary .summary-card:first-child {
+            border-color: rgba(255, 69, 58, 0.38);
+        }
+
+        .summary-card.success {
+            border-color: rgba(48, 209, 88, 0.42);
+        }
+
+        .summary-card.warning {
+            border-color: rgba(255, 214, 10, 0.35);
+        }
+
+        .summary-card.info {
+            border-color: rgba(10, 132, 255, 0.35);
+        }
+
+        .summary-detail {
+            color: #B0B3B8;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            min-height: 2.5em;
+        }
+
+        .changes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .changes-list li {
+            padding: 12px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            color: #B0B3B8;
+        }
+
+        .changes-list li:last-child {
+            border-bottom: none;
+        }
+
+        .changes-list li:before {
+            content: "✓";
+            color: #30D158;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .sample-title {
+            color: #FFFFFF;
+        }
+
+        .comparison-box {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comparison-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(10, 132, 255, 0.3);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 768px) {
+            .summary-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Data Cleaning Completed</h1>
+            <p id="fileName" class="file-name"></p>
+        </div>
+
+        <div class="main-content results-container">
+            <!-- Navigation -->
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="backBtn">← Back to Cleaning</button>
+                <button class="btn btn-secondary" id="homeBtn">🏠 Home</button>
+            </div>
+
+            <!-- Success Message -->
+            <div
+                style="background: rgba(48, 209, 88, 0.14); border: 1px solid rgba(48, 209, 88, 0.38); color: #9AF2B3; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                <strong>🎉 Success!</strong> Your data has been cleaned successfully. Here's a summary.
+            </div>
+
+            <!-- Comparison Section -->
+            <div class="comparison-grid">
+                <div class="comparison-box">
+                    <h3>📊 Original Dataset</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Rows:</span>
+                        <span class="stat-value" id="origRows">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Columns:</span>
+                        <span class="stat-value" id="origCols">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Missing Values:</span>
+                        <span class="stat-value" id="origMissing">-</span>
+                    </div>
+                </div>
+
+                <div class="comparison-box">
+                    <h3>✨ Cleaned Dataset</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Rows:</span>
+                        <span class="stat-value" id="cleanedRows">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Total Columns:</span>
+                        <span class="stat-value" id="cleanedCols">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Missing Values:</span>
+                        <span class="stat-value" id="cleanedMissing">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="cleaning-summary">
+                <div class="summary-card">
+                    <div class="summary-label">Rows Removed</div>
+                    <div class="summary-value" id="rowsRemoved">-</div>
+                    <div class="summary-detail">Duplicates & missing data</div>
+                </div>
+
+                <div class="summary-card success">
+                    <div class="summary-label">Columns Deleted</div>
+                    <div class="summary-value" id="colsDeleted">-</div>
+                    <div class="summary-detail">High missing values</div>
+                </div>
+
+                <div class="summary-card warning">
+                    <div class="summary-label">Values Filled</div>
+                    <div class="summary-value" id="valuesFilled">-</div>
+                    <div class="summary-detail">Mean/Mode imputation</div>
+                </div>
+
+                <div class="summary-card info">
+                    <div class="summary-label">Data Quality</div>
+                    <div class="summary-value" id="dataQuality">-</div>
+                    <div class="summary-detail">Improved</div>
+                </div>
+            </div>
+
+            <!-- Changes Made Section -->
+            <div class="changes-section">
+                <h3 style="margin-top: 0;">✅ Changes Made</h3>
+                <ul class="changes-list" id="changesList">
+                    <!-- Populated by JavaScript -->
+                </ul>
+            </div>
+
+            <!-- Sample Data Section -->
+            <section class="sample-data-section">
+                <h2 class="sample-title">📋 Sample of Cleaned Data (First 7 Rows)</h2>
+                <div class="table-responsive">
+                    <table class="sample-table" id="sampleTable">
+                        <thead>
+                            <!-- Headers populated by JavaScript -->
+                        </thead>
+                        <tbody>
+                            <!-- Data populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="no-data" id="noDataMessage" style="display: none;">
+                    No sample data available
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-success" id="downloadBtn">
+                    📥 Download Cleaned CSV
+                </button>
+                <button class="btn btn-primary" id="mlTrainBtn">
+                    🤖 Train ML Models
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Data Cleaning Tool v1.0 | Results</p>
+        </div>
+    </div>
+
+    <script src="js/cleaning-results.js"></script>
+    <script src="js/chatbot-widget.js"></script>
+</body>
+
+</html>
